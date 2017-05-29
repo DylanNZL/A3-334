@@ -1,0 +1,8 @@
+client.out		: 	client.o 
+	g++ -Wall -O2 client.cpp -o client.out 
+			
+client.o		:	client.cpp 
+	g++ -c -O2 -Wall client.cpp
+	
+clean:
+	$(RM) client
