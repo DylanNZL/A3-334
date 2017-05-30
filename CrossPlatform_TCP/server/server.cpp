@@ -1,6 +1,6 @@
 //////////////////////////////////////////////////////////////////////////////////////////////
 // TCP CrossPlatform SERVER v.1.0 (towards IPV6 ready)
-// compiles using GCC 
+// compiles using GCC
 //
 //
 // References: https://msdn.microsoft.com/en-us/library/windows/desktop/ms738520(v=vs.85).aspx
@@ -8,7 +8,7 @@
 //             Andre Barczak's tcp server codes
 //
 // Author: Napoleon Reyes, Ph.D.
-//         Massey University, Albany  
+//         Massey University, Albany
 //
 //////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -26,22 +26,23 @@
   #include <netdb.h>      //used for domain/DNS hostname lookup (e.g getnameinfo())
   #include <iostream>
 #elif defined _WIN32
+  #define _WIN32_WINNT 0x501 
   #include <winsock2.h>
   #include <ws2tcpip.h> //required by getaddrinfo() and special constants
   #include <stdlib.h>
   #include <stdio.h>
   #include <iostream>
   #define WSVERS MAKEWORD(2,2) /* Use the MAKEWORD(lowbyte, highbyte) macro declared in Windef.h */
-                    //The high-order byte specifies the minor version number; 
+                    //The high-order byte specifies the minor version number;
                     //the low-order byte specifies the major version number.
 
-  WSADATA wsadata; //Create a WSADATA object called wsadata. 
+  WSADATA wsadata; //Create a WSADATA object called wsadata.
 #endif
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 #define SECRET_PASSWORD "334"
-#define DEFAULT_PORT "1234" 
+#define DEFAULT_PORT "1234"
 
 using namespace std;
 
@@ -50,10 +51,10 @@ void printBuffer(const char *header, char *buffer){
   cout << "------" << header << "------" << endl;
   for(unsigned int i=0; i < strlen(buffer); i++){
     if(buffer[i] == '\r'){
-       cout << "buffer[" << i << "]=\\r" << endl; 
+       cout << "buffer[" << i << "]=\\r" << endl;
     } else if(buffer[i] == '\n'){
-       cout << "buffer[" << i << "]=\\n" << endl; 
-    } else {   
+       cout << "buffer[" << i << "]=\\n" << endl;
+    } else {
        cout << "buffer[" << i << "]=" << buffer[i] << endl;
     }
   }
@@ -64,29 +65,29 @@ void printBuffer(const char *header, char *buffer){
 //MAIN
 //*******************************************************************
 int main(int argc, char *argv[]) {
-	
+
 //********************************************************************
 // INITIALIZATION of the SOCKET library
 //********************************************************************
    //struct sockaddr_in clientAddress;  //IPV4
 	struct sockaddr_storage clientAddress; //IPV6-compatible
-	char clientHost[NI_MAXHOST]; 
+	char clientHost[NI_MAXHOST];
 	char clientService[NI_MAXSERV];
-	
+
 #if defined __unix__ || defined __APPLE__
   int s, ns;
 #elif defined _WIN32
   SOCKET s, ns;
 #endif
 
-#define BUFFER_SIZE 200 
+#define BUFFER_SIZE 200
 
   char send_buffer[BUFFER_SIZE],receive_buffer[BUFFER_SIZE];
   int  n,bytes,addrlen;
 	char portNum[NI_MAXSERV];
 	char username[80];
 	char passwd[80];
-	
+
   memset(&send_buffer,0,BUFFER_SIZE);
   memset(&receive_buffer,0,BUFFER_SIZE);
 
@@ -100,14 +101,14 @@ int main(int argc, char *argv[]) {
 
 //********************************************************************
 // WSSTARTUP
-/*  All processes (applications or DLLs) that call Winsock functions must 
-  initialize the use of the Windows Sockets DLL before making other Winsock 
-  functions calls. 
+/*  All processes (applications or DLLs) that call Winsock functions must
+  initialize the use of the Windows Sockets DLL before making other Winsock
+  functions calls.
   This also makes certain that Winsock is supported on the system.
 */
 //********************************************************************
    int err;
-  
+
    err = WSAStartup(WSVERS, &wsadata);
    if (err != 0) {
       WSACleanup();
@@ -116,7 +117,7 @@ int main(int argc, char *argv[]) {
       printf("WSAStartup failed with error: %d\n", err);
       exit(1);
    }
-  
+
 //********************************************************************
 /* Confirm that the WinSock DLL supports 2.2.        */
 /* Note that if the DLL supports versions greater    */
@@ -125,7 +126,7 @@ int main(int argc, char *argv[]) {
 /* requested.                                        */
 //********************************************************************
 
-    printf("\n\n<<<TCP (CROSS-PLATFORM, IPv6-ready) SERVER, by nhreyes>>>\n");  
+    printf("\n\n<<<TCP (CROSS-PLATFORM, IPv6-ready) SERVER, by nhreyes>>>\n");
     if (LOBYTE(wsadata.wVersion) != 2 || HIBYTE(wsadata.wVersion) != 2) {
         /* Tell the user that we could not find a usable */
         /* WinSock DLL.                                  */
@@ -133,12 +134,12 @@ int main(int argc, char *argv[]) {
         WSACleanup();
         exit(1);
     }
-    else{              
+    else{
         printf("\nThe Winsock 2.2 dll was initialised.\n");
     }
 
 #endif
- 
+
 
 //********************************************************************
 // set the socket address structure.
@@ -153,12 +154,12 @@ int iResult;
 //********************************************************************
 // STEP#0 - Specify server address information and socket properties
 //********************************************************************
-	 
+
 //ZeroMemory(&hints, sizeof (hints)); //alternatively, for Windows only
 memset(&hints, 0, sizeof(struct addrinfo));
 
 if(USE_IPV6){
-   hints.ai_family = AF_INET6;  
+   hints.ai_family = AF_INET6;
 }	 else { //IPV4
    hints.ai_family = AF_INET;
 }
@@ -166,24 +167,24 @@ if(USE_IPV6){
 //hints.ai_family = AF_UNSPEC; // don't care IPv4 or IPv6
 hints.ai_socktype = SOCK_STREAM;
 hints.ai_protocol = IPPROTO_TCP;
-hints.ai_flags = AI_PASSIVE; // For wildcard IP address 
-                             //setting the AI_PASSIVE flag indicates the caller intends to use 
-									           //the returned socket address structure in a call to the bind function. 
+hints.ai_flags = AI_PASSIVE; // For wildcard IP address
+                             //setting the AI_PASSIVE flag indicates the caller intends to use
+									           //the returned socket address structure in a call to the bind function.
 
 // Resolve the local address and port to be used by the server
-if(argc==2){	 
-	 iResult = getaddrinfo(NULL, argv[1], &hints, &result); //converts human-readable text strings representing hostnames or IP addresses 
+if(argc==2){
+	 iResult = getaddrinfo(NULL, argv[1], &hints, &result); //converts human-readable text strings representing hostnames or IP addresses
 	                                                        //into a dynamically allocated linked list of struct addrinfo structures
 																			                    //IPV4 & IPV6-compliant
 	 sprintf(portNum,"%s", argv[1]);
-	 printf("\nargv[1] = %s\n", argv[1]); 	
+	 printf("\nargv[1] = %s\n", argv[1]);
 
 } else {
-   iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result); //converts human-readable text strings representing hostnames or IP addresses 
+   iResult = getaddrinfo(NULL, DEFAULT_PORT, &hints, &result); //converts human-readable text strings representing hostnames or IP addresses
 	                                                             //into a dynamically allocated linked list of struct addrinfo structures
 																				                       //IPV4 & IPV6-compliant
 	 sprintf(portNum,"%s", DEFAULT_PORT);
-	 printf("\nUsing DEFAULT_PORT = %s\n", portNum); 
+	 printf("\nUsing DEFAULT_PORT = %s\n", portNum);
 }
 
 if (iResult != 0) {
@@ -191,9 +192,9 @@ if (iResult != 0) {
 
 #if defined _WIN32
     WSACleanup();
-#endif    
+#endif
     return 1;
-}	 
+}
 
 
 //********************************************************************
@@ -229,24 +230,24 @@ s = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
       exit(1);//return 1;
   }
 #endif
-  
+
 
 
 //********************************************************************
 
-	
+
 //********************************************************************
 //STEP#2 - BIND the welcome socket
 //********************************************************************
 
 // bind the TCP welcome socket to the local address of the machine and port number
    iResult = bind( s, result->ai_addr, (int)result->ai_addrlen);
-    
-     
+
+
 //if error is detected, then clean-up
 #if defined __unix__ || defined __APPLE__
    if (iResult == -1) {
-      printf( "\nbind failed\n"); 
+      printf( "\nbind failed\n");
       freeaddrinfo(result);
       close(s);//close socket
 #elif defined _WIN32
@@ -255,21 +256,21 @@ s = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
       freeaddrinfo(result);
       closesocket(s);
       WSACleanup();
-#endif       
+#endif
       return 1;
     }
-	 
-	 freeaddrinfo(result); //free the memory allocated by the getaddrinfo 
-	                       //function for the server's address, as it is 
+
+	 freeaddrinfo(result); //free the memory allocated by the getaddrinfo
+	                       //function for the server's address, as it is
 	                       //no longer needed
 //********************************************************************
-	 
+
 /*
    if (bind(s,(struct sockaddr *)(&localaddr),sizeof(localaddr)) == SOCKET_ERROR) {
       printf("Bind failed!\n");
    }
 */
-	
+
 //********************************************************************
 //STEP#3 - LISTEN on welcome socket for any incoming connection
 //********************************************************************
@@ -280,31 +281,31 @@ s = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
     if (listen( s, SOMAXCONN ) == SOCKET_ERROR ) {
 #endif
 
-	
+
 
 
 #if defined __unix__ || defined __APPLE__
-      printf( "\nListen failed\n"); 
-      close(s); 
+      printf( "\nListen failed\n");
+      close(s);
 #elif defined _WIN32
       printf( "Listen failed with error: %d\n", WSAGetLastError() );
       closesocket(s);
-      WSACleanup(); 
-#endif   
+      WSACleanup();
+#endif
 
       exit(1);
 
    } else {
 		  printf("\n<<<SERVER>>> is listening at PORT: %s\n", portNum);
 	 }
-	
+
 //*******************************************************************
 //INFINITE LOOP
 //********************************************************************
 while (1) {  //main loop
 
       addrlen = sizeof(clientAddress); //IPv4 & IPv6-compliant
-		
+
 //********************************************************************
 //NEW SOCKET newsocket = accept
 //********************************************************************
@@ -315,18 +316,18 @@ while (1) {  //main loop
 #endif
 
 
-//********************************************************************	
-// STEP#4 - Accept a client connection.  
-//	accept() blocks the iteration, and causes the program to wait.  
+//********************************************************************
+// STEP#4 - Accept a client connection.
+//	accept() blocks the iteration, and causes the program to wait.
 //	Once an incoming client is detected, it returns a new socket ns
-// exclusively for the client.  
+// exclusively for the client.
 // It also extracts the client's IP address and Port number and stores
 // it in a structure.
 //********************************************************************
-	
-#if defined __unix__ || defined __APPLE__     
+
+#if defined __unix__ || defined __APPLE__
       ns = accept(s,(struct sockaddr *)(&clientAddress),(socklen_t*)&addrlen); //IPV4 & IPV6-compliant
-#elif defined _WIN32      
+#elif defined _WIN32
       ns = accept(s,(struct sockaddr *)(&clientAddress),&addrlen); //IPV4 & IPV6-compliant
       // ns = accept(s,NULL, NULL); //IPV4 & IPV6-compliant - getnameinfo() will complain if you use this!
 #endif
@@ -338,12 +339,12 @@ while (1) {  //main loop
   if (ns == -1) {
      printf("\naccept failed\n");
      close(s);
-     
+
      return 1;
 
   } else {
       printf("\nA <<<CLIENT>>> has been accepted.\n");
-    
+
       // strcpy(clientHost,inet_ntoa(clientAddress.sin_addr)); //IPV4
       // sprintf(clientService,"%d",ntohs(clientAddress.sin_port)); //IPV4
       // ---
@@ -360,11 +361,11 @@ while (1) {  //main loop
         exit(1);
       } else{
         printf("\nConnected to <<<CLIENT>>> with IP address:%s, at Port:%s\n",clientHost, clientService);
-      }   
+      }
 
-  } 
+  }
 
-      
+
 #elif defined _WIN32
 
   if (ns == INVALID_SOCKET) {
@@ -375,7 +376,7 @@ while (1) {  //main loop
 
   } else {
     printf("\nA <<<CLIENT>>> has been accepted.\n");
-    
+
     //strcpy(clientHost,inet_ntoa(clientAddress.sin_addr)); //IPV4
     //sprintf(clientService,"%d",ntohs(clientAddress.sin_port)); //IPV4
     //---
@@ -394,16 +395,16 @@ while (1) {  //main loop
     } else{
        printf("\nConnected to <<<Client>>> with IP address:%s, at Port:%s\n",clientHost, clientService);
     }
-        
-  } 
+
+  }
 
 
-#endif 	
+#endif
 
 
-  
-		
-//********************************************************************		
+
+
+//********************************************************************
 //Communicate with the Client
 //********************************************************************
 		printf("\n--------------------------------------------\n");
@@ -422,14 +423,14 @@ while (1) {  //main loop
 
             bytes = recv(ns, &receive_buffer[n], 1, 0);
 
-#if defined __unix__ || defined __APPLE__      
+#if defined __unix__ || defined __APPLE__
       if ((bytes == -1) || (bytes == 0)) break;
-      
-#elif defined _WIN32      
+
+#elif defined _WIN32
       if ((bytes == SOCKET_ERROR) || (bytes == 0)) break;
 #endif
 
-            if (receive_buffer[n] == '\n') { /*end on a LF, Note: LF is equal to one character*/  
+            if (receive_buffer[n] == '\n') { /*end on a LF, Note: LF is equal to one character*/
                receive_buffer[n] = '\0';
                break;
             }
@@ -437,30 +438,30 @@ while (1) {  //main loop
          }
 
 //this will handle the case when the user quits (types '.')
-#if defined __unix__ || defined __APPLE__      
+#if defined __unix__ || defined __APPLE__
       if ((bytes == -1) || (bytes == 0)) break;
-#elif defined _WIN32      
+#elif defined _WIN32
       if ((bytes == SOCKET_ERROR) || (bytes == 0)) break;
  #endif
 
 //********************************************************************
 //PROCESS REQUEST
-//********************************************************************      
+//********************************************************************
          printBuffer("RECEIVE_BUFFER", receive_buffer);
          printf("\nMSG RECEIVED <<<--- :%s\n",receive_buffer);
-         
-      
-//********************************************************************			 
+
+
+//********************************************************************
          memset(&send_buffer, 0, BUFFER_SIZE);
 
          sprintf(send_buffer, "The Client typed '%s' - %d bytes of information\r\n", receive_buffer, n);
 
 //SEND
-//********************************************************************         
+//********************************************************************
 			   bytes = send(ns, send_buffer, strlen(send_buffer), 0);
-#if defined __unix__ || defined __APPLE__      
+#if defined __unix__ || defined __APPLE__
          if ((bytes == -1) || (bytes == 0)) break;
-#elif defined _WIN32      
+#elif defined _WIN32
          if ((bytes == SOCKET_ERROR) || (bytes == 0)) break;
 #endif
 			   printf("\nMSG SENT     --->>> :%s\n",send_buffer);
@@ -469,7 +470,7 @@ while (1) {  //main loop
 //********************************************************************
 //CLOSE SOCKET
 //********************************************************************
-		  
+
 #if defined __unix__ || defined __APPLE__
       close(ns);
 #elif defined _WIN32
@@ -479,14 +480,14 @@ while (1) {  //main loop
          closesocket(ns);
          WSACleanup();
          exit(1);
-      } 
+      }
 //***********************************************************************
-      closesocket(ns);   
-#endif 
-		
+      closesocket(ns);
+#endif
+
       printf("\nDisconnected from <<<CLIENT>>> with IP address:%s, Port:%s\n",clientHost, clientService);
 		  printf("=============================================");
-		
+
 } //main loop
 //***********************************************************************
 
@@ -495,10 +496,10 @@ while (1) {  //main loop
     close(s);//close listening socket
 #elif defined _WIN32
     closesocket(s);//close listening socket
-    WSACleanup(); /* call WSACleanup when done using the Winsock dll */ 
+    WSACleanup(); /* call WSACleanup when done using the Winsock dll */
 #endif
-	
-	 
+
+
     return 0;
 }
 
