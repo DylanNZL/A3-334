@@ -26,11 +26,12 @@
   #include <netdb.h>      //used for domain/DNS hostname lookup (e.g getnameinfo())
   #include <iostream>
 #elif defined _WIN32
-  #define _WIN32_WINNT 0x501 
+  #define _WIN32_WINNT 0x501
   #include <winsock2.h>
   #include <ws2tcpip.h> //required by getaddrinfo() and special constants
   #include <stdlib.h>
   #include <stdio.h>
+  #include <time.h>
   #include <iostream>
   #define WSVERS MAKEWORD(2,2) /* Use the MAKEWORD(lowbyte, highbyte) macro declared in Windef.h */
                     //The high-order byte specifies the minor version number;
@@ -38,14 +39,10 @@
 
   WSADATA wsadata; //Create a WSADATA object called wsadata.
 #endif
-
 //////////////////////////////////////////////////////////////////////////////////////////////
-
 #define SECRET_PASSWORD "334"
 #define DEFAULT_PORT "1234"
-
 using namespace std;
-
 //*******************************************************************
 void printBuffer(const char *header, char *buffer){
   cout << "------" << header << "------" << endl;
@@ -60,28 +57,23 @@ void printBuffer(const char *header, char *buffer){
   }
   cout << "---" << endl;
 }
-
 //*******************************************************************
 //MAIN
 //*******************************************************************
 int main(int argc, char *argv[]) {
-
 //********************************************************************
 // INITIALIZATION of the SOCKET library
 //********************************************************************
-   //struct sockaddr_in clientAddress;  //IPV4
+  //struct sockaddr_in clientAddress;  //IPV4
 	struct sockaddr_storage clientAddress; //IPV6-compatible
 	char clientHost[NI_MAXHOST];
 	char clientService[NI_MAXSERV];
-
 #if defined __unix__ || defined __APPLE__
   int s, ns;
 #elif defined _WIN32
   SOCKET s, ns;
 #endif
-
 #define BUFFER_SIZE 200
-
   char send_buffer[BUFFER_SIZE],receive_buffer[BUFFER_SIZE];
   int  n,bytes,addrlen;
 	char portNum[NI_MAXSERV];
@@ -93,22 +85,11 @@ int main(int argc, char *argv[]) {
 
 #if defined __unix__ || defined __APPLE__
    //nothing to do here
-
 #elif defined _WIN32
 //********************************************************************
 // WSSTARTUP
 //********************************************************************
-
-//********************************************************************
-// WSSTARTUP
-/*  All processes (applications or DLLs) that call Winsock functions must
-  initialize the use of the Windows Sockets DLL before making other Winsock
-  functions calls.
-  This also makes certain that Winsock is supported on the system.
-*/
-//********************************************************************
    int err;
-
    err = WSAStartup(WSVERS, &wsadata);
    if (err != 0) {
       WSACleanup();
@@ -117,16 +98,7 @@ int main(int argc, char *argv[]) {
       printf("WSAStartup failed with error: %d\n", err);
       exit(1);
    }
-
-//********************************************************************
-/* Confirm that the WinSock DLL supports 2.2.        */
-/* Note that if the DLL supports versions greater    */
-/* than 2.2 in addition to 2.2, it will still return */
-/* 2.2 in wVersion since that is the version we      */
-/* requested.                                        */
-//********************************************************************
-
-    printf("\n\n<<<TCP (CROSS-PLATFORM, IPv6-ready) SERVER, by nhreyes>>>\n");
+  printf("\n\n<<<TCP (CROSS-PLATFORM, IPv6-ready) SERVER, by nhreyes>>>\n");
     if (LOBYTE(wsadata.wVersion) != 2 || HIBYTE(wsadata.wVersion) != 2) {
         /* Tell the user that we could not find a usable */
         /* WinSock DLL.                                  */
@@ -143,13 +115,11 @@ int main(int argc, char *argv[]) {
 
 //********************************************************************
 // set the socket address structure.
-//
 //********************************************************************
 struct addrinfo *result = NULL;
 struct addrinfo hints;
 // struct addrinfo *ptr = NULL;
 int iResult;
-
 
 //********************************************************************
 // STEP#0 - Specify server address information and socket properties
@@ -230,12 +200,7 @@ s = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
       exit(1);//return 1;
   }
 #endif
-
-
-
 //********************************************************************
-
-
 //********************************************************************
 //STEP#2 - BIND the welcome socket
 //********************************************************************
@@ -281,9 +246,6 @@ s = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
     if (listen( s, SOMAXCONN ) == SOCKET_ERROR ) {
 #endif
 
-
-
-
 #if defined __unix__ || defined __APPLE__
       printf( "\nListen failed\n");
       close(s);
@@ -292,8 +254,7 @@ s = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
       closesocket(s);
       WSACleanup();
 #endif
-
-      exit(1);
+    exit(1);
 
    } else {
 		  printf("\n<<<SERVER>>> is listening at PORT: %s\n", portNum);
@@ -315,7 +276,6 @@ while (1) {  //main loop
        ns = INVALID_SOCKET;
 #endif
 
-
 //********************************************************************
 // STEP#4 - Accept a client connection.
 //	accept() blocks the iteration, and causes the program to wait.
@@ -324,7 +284,6 @@ while (1) {  //main loop
 // It also extracts the client's IP address and Port number and stores
 // it in a structure.
 //********************************************************************
-
 #if defined __unix__ || defined __APPLE__
       ns = accept(s,(struct sockaddr *)(&clientAddress),(socklen_t*)&addrlen); //IPV4 & IPV6-compliant
 #elif defined _WIN32
@@ -332,19 +291,13 @@ while (1) {  //main loop
       // ns = accept(s,NULL, NULL); //IPV4 & IPV6-compliant - getnameinfo() will complain if you use this!
 #endif
 
-
 #if defined __unix__ || defined __APPLE__
-
-
   if (ns == -1) {
      printf("\naccept failed\n");
      close(s);
-
      return 1;
-
   } else {
       printf("\nA <<<CLIENT>>> has been accepted.\n");
-
       // strcpy(clientHost,inet_ntoa(clientAddress.sin_addr)); //IPV4
       // sprintf(clientService,"%d",ntohs(clientAddress.sin_port)); //IPV4
       // ---
@@ -397,13 +350,7 @@ while (1) {  //main loop
     }
 
   }
-
-
 #endif
-
-
-
-
 //********************************************************************
 //Communicate with the Client
 //********************************************************************
@@ -412,6 +359,11 @@ while (1) {  //main loop
 		//Clear user details
 		memset(username,0,80);
 		memset(passwd,0,80);
+    long RSA_E = 3;
+    long RSA_D = 16971;
+    long RSA_N = 25777;
+    long RSA_NONCE = 0;
+    bool acknowledged = false;
 
     while (1) {
          memset(receive_buffer, 0, BUFFER_SIZE);
@@ -420,23 +372,18 @@ while (1) {  //main loop
 //RECEIVE one command (delimited by \r\n)
 //********************************************************************
          while (1) {
-
             bytes = recv(ns, &receive_buffer[n], 1, 0);
-
 #if defined __unix__ || defined __APPLE__
-      if ((bytes == -1) || (bytes == 0)) break;
-
+            if ((bytes == -1) || (bytes == 0)) break;
 #elif defined _WIN32
-      if ((bytes == SOCKET_ERROR) || (bytes == 0)) break;
+            if ((bytes == SOCKET_ERROR) || (bytes == 0)) break;
 #endif
-
             if (receive_buffer[n] == '\n') { /*end on a LF, Note: LF is equal to one character*/
                receive_buffer[n] = '\0';
                break;
             }
             if (receive_buffer[n] != '\r') n++; /*ignore CRs*/
          }
-
 //this will handle the case when the user quits (types '.')
 #if defined __unix__ || defined __APPLE__
       if ((bytes == -1) || (bytes == 0)) break;
@@ -447,17 +394,46 @@ while (1) {  //main loop
 //********************************************************************
 //PROCESS REQUEST
 //********************************************************************
-         printBuffer("RECEIVE_BUFFER", receive_buffer);
-         printf("\nMSG RECEIVED <<<--- :%s\n",receive_buffer);
-
-
-//********************************************************************
-         memset(&send_buffer, 0, BUFFER_SIZE);
-
-         sprintf(send_buffer, "The Client typed '%s' - %d bytes of information\r\n", receive_buffer, n);
-
-//SEND
-//********************************************************************
+    printf("\nMSG RECEIVED <<<--- :%s\n",receive_buffer);
+    // TODO: Check what kind of message we recieved.
+    // REQUESTING RSA E,N
+    if (strncmp(receive_buffer, "SEND RSA", 8) == 0) {
+      memset(&send_buffer, 0, BUFFER_SIZE);
+      sprintf(send_buffer, "RSA E:%ld;N:%ld;\r\n", RSA_E, RSA_N);
+    } 
+    // ACKNOWLEDGE RSA E,N
+    else if (strncmp(receive_buffer, "RSA ACK", 7) == 0) {
+        acknowledged = true;
+    } 
+    // RECIEVE NONCE
+    else if (strncmp(receive_buffer, "RSA NONCE", 9) == 0) {
+      char * temp_buffer = new char[strlen(receive_buffer) + 1];
+      strcpy (temp_buffer, receive_buffer);
+      char * pch;
+      pch = strtok(temp_buffer, ":");
+      pch = strtok(NULL, "\0");
+      RSA_NONCE = atoi(pch);
+      printf("NONCE: %ld\n", RSA_NONCE);
+      memset(&send_buffer, 0, BUFFER_SIZE);
+      sprintf(send_buffer, "ACK 220 nonce OK\r\n");
+    } 
+    // RECIEVED CYCPHER TEXT
+    else if (strncmp(receive_buffer, "CYPHERTEXT", 10) == 0) {
+      char * temp_buffer = new char[strlen(receive_buffer) + 1];
+      strcpy (temp_buffer, receive_buffer);
+      char * pch;
+      pch = strtok(temp_buffer, ":");
+      pch = strtok(NULL, ";");
+      printBuffer("RECEIVE_BUFFER", pch);
+    } 
+    // UNKNOWN
+    else {
+      memset(&send_buffer, 0, BUFFER_SIZE);
+      sprintf(send_buffer, "The Client typed '%s' - %d bytes of information\r\n", receive_buffer, n);
+    }
+    //********************************************************************
+    // SEND
+    //********************************************************************
 			   bytes = send(ns, send_buffer, strlen(send_buffer), 0);
 #if defined __unix__ || defined __APPLE__
          if ((bytes == -1) || (bytes == 0)) break;
@@ -466,7 +442,7 @@ while (1) {  //main loop
 #endif
 			   printf("\nMSG SENT     --->>> :%s\n",send_buffer);
          memset(&send_buffer,0,BUFFER_SIZE);
-      }
+  }// RECV LOOP
 //********************************************************************
 //CLOSE SOCKET
 //********************************************************************
@@ -474,7 +450,7 @@ while (1) {  //main loop
 #if defined __unix__ || defined __APPLE__
       close(ns);
 #elif defined _WIN32
-      int iResult = shutdown(ns, SD_SEND);
+      iResult = shutdown(ns, SD_SEND);
       if (iResult == SOCKET_ERROR) {
          printf("shutdown failed with error: %d\n", WSAGetLastError());
          closesocket(ns);
@@ -488,18 +464,14 @@ while (1) {  //main loop
       printf("\nDisconnected from <<<CLIENT>>> with IP address:%s, Port:%s\n",clientHost, clientService);
 		  printf("=============================================");
 
-} //main loop
+    } //main loop
 //***********************************************************************
-
-
 #if defined __unix__ || defined __APPLE__
     close(s);//close listening socket
 #elif defined _WIN32
     closesocket(s);//close listening socket
     WSACleanup(); /* call WSACleanup when done using the Winsock dll */
 #endif
-
-
     return 0;
 }
 

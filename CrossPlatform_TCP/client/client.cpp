@@ -34,6 +34,7 @@
   #include <stdlib.h>
   #include <stdio.h>
   #include <cstdio>
+  #include <time.h>
   #include <iostream>
   #define WSVERS MAKEWORD(2,2) /* Use the MAKEWORD(lowbyte, highbyte) macro declared in Windef.h */
                     //The high-order byte specifies the minor version number;
@@ -331,10 +332,46 @@ hints.ai_protocol = IPPROTO_TCP;
 //*******************************************************************
 //Get input while user don't type "."
 //*******************************************************************
+	memset(&send_buffer,0,BUFFER_SIZE);
+	sprintf(send_buffer, "SEND RSA\r\n");
+	bytes = send(s, send_buffer, strlen(send_buffer),0);
+	printf("\nMSG SENT     --->>>: %s\n",send_buffer);//line sent
+ 	while (1) {
+		bytes = recv(s, &receive_buffer[n], 1, 0);
+		#if defined __unix__ || defined __APPLE__
+     	if ((bytes == -1) || (bytes == 0)) { printf("recv failed\n"); exit(1); }
+		#elif defined _WIN32
+     	if ((bytes == SOCKET_ERROR) || (bytes == 0)) { printf("recv failed\n"); exit(1); }
+		#endif
+     	if (receive_buffer[n] == '\n') { receive_buffer[n] = '\0'; break; }
+     	if (receive_buffer[n] != '\r') n++;   /*ignore CR's*/
+  	}
+	// EXTRACT E & N FROM RECIEVED Message
+	printf("%s\n",receive_buffer);
+	char * temp_buffer = new char[strlen(receive_buffer) + 1];
+	strcpy (temp_buffer, receive_buffer);
+	char * pch;
+	pch = strtok(temp_buffer, ":");
+	pch = strtok(NULL, ";");
+	long RSA_E = atoi(pch);
+	pch = strtok(NULL, ":");
+	pch = strtok(NULL, ";");
+	long RSA_N = atoi(pch);
+	printf("E: %ld\nN: %ld\n", RSA_E, RSA_N);
+
+	// SEND NONCE ENCRYPTED WITH E
+	// TODO: ENCRYPT WITH E
+	srand(time(NULL));
+	long nonce = rand();
+	memset(&send_buffer,0,BUFFER_SIZE);	
+	sprintf(send_buffer, "RSA NONCE:%ld;\r\n", nonce);
+	bytes = send(s, send_buffer, strlen(send_buffer),0);
+	printf("\nMSG SENT     --->>>: %s\n",send_buffer);//line sent
+
+  	memset(&send_buffer,0,BUFFER_SIZE);
 	printf("\n--------------------------------------------\n");
 	printf("you may now start sending commands to the <<<SERVER>>>\n");
 	printf("\nType here:");
-	memset(&send_buffer,0,BUFFER_SIZE);
     if(fgets(send_buffer,SEGMENT_SIZE,stdin) == NULL){
 		printf("error using fgets()\n");
 		exit(1);
