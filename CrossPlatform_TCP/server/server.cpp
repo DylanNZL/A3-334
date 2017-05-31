@@ -452,11 +452,11 @@ while (1) {  //main loop
     // RECIEVED CYCPHER TEXT
     else if (strncmp(receive_buffer, "CYPHERTEXT", 10) == 0) {
       char * temp_buffer = new char[strlen(receive_buffer) + 1];
-      strcpy (temp_buffer, receive_buffer);
-      char * pch;
-      pch = strtok(temp_buffer, ":");
-      pch = strtok(NULL, ";");
-      printBuffer("RECEIVE_BUFFER", pch);
+      strcpy (temp_buffer, temp_buffer);
+      printBuffer("RECEIVE_BUFFER", temp_buffer);
+      decryptBuffer(temp_buffer, RSA_D, RSA_N, RSA_NONCE);
+       memset(&send_buffer, 0, BUFFER_SIZE);
+      sprintf(send_buffer, "Received: %s\r\n", temp_buffer);
     } 
     // UNKNOWN
     else {
