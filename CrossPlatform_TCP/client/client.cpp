@@ -66,6 +66,35 @@ void printBuffer(const char *header, char *buffer){
 }
 
 /////////////////////////////////////////////////////////////////////
+// Takes the buffer and encrypts every character using the rsa thing
+// first Xor with m^e (or previous result if not the first item)
+// then result % n
+// returns the ecncypted send buffer (will take up alot more space)
+void encryptBuffer(char * send_buffer, long e, long n, long nonce) {
+	int len = strlen(send_buffer);
+	long buffer[len];
+	for (int i = 0; i < len; i++) {
+		char letter = send_buffer[i];
+		long eletter;
+		if (i == 0) eletter = letter ^ e;
+		else eletter = letter ^ buffer[i-1];
+		buffer[i] = eletter % n;
+	}
+	
+	char * temp_buffer = new char[200];
+	memset(&temp_buffer, 200, 0);
+	memset(&send_buffer, len, 0);
+	sprintf(send_buffer,"CYPHERTEXT:");
+	for (int i = 0; i < len; i++) {
+		// Print the encrypted character 
+		sprintf(temp_buffer,"%ld;",buffer[i]);
+		// Copy it in to the 
+		strcat(send_buffer, temp_buffer);
+	}
+	strcat(send_buffer, "\r\n");
+}
+
+/////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
 //*******************************************************************
 // Initialization
@@ -364,9 +393,9 @@ hints.ai_protocol = IPPROTO_TCP;
 	// SEND NONCE ENCRYPTED WITH E
 	// TODO: ENCRYPT WITH E
 	srand(time(NULL));
-	long nonce = rand();
+	long RSA_NONCE = rand();
 	memset(&send_buffer,0,BUFFER_SIZE);	
-	sprintf(send_buffer, "RSA NONCE:%ld;\r\n", nonce);
+	sprintf(send_buffer, "RSA NONCE:%ld;\r\n", RSA_NONCE);
 	bytes = send(s, send_buffer, strlen(send_buffer),0);
 	printf("\nMSG SENT     --->>>: %s\n",send_buffer);//line sent
 
@@ -401,12 +430,11 @@ hints.ai_protocol = IPPROTO_TCP;
 		   printBuffer("SEND_BUFFER", send_buffer);
 		   printf("Message length: %d \n",(int)strlen(send_buffer));
 
-
 	       strcat(send_buffer,"\r\n");
 	//*******************************************************************
 	//SEND
 	//*******************************************************************
-
+	 	   encryptBuffer(send_buffer, RSA_E, RSA_N, RSA_NONCE);	
 	       bytes = send(s, send_buffer, strlen(send_buffer),0);
 	       printf("\nMSG SENT     --->>>: %s\n",send_buffer);//line sent
 

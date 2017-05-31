@@ -58,6 +58,25 @@ void printBuffer(const char *header, char *buffer){
   cout << "---" << endl;
 }
 //*******************************************************************
+/*void decryptBuffer(char * buffer, RSA_D, RSA_N, RSA_NONCE) {
+  cout << buffer << endl;
+  long buf[100];
+  char * pch;
+  char * b[100];
+  pch = strtok(buffer, ":");
+  int len = 0;
+  while (true) {
+    pch = strtok(buffer, ";");
+    if (pch == NULL) {
+      break;
+    }
+    len++;
+  }
+  for (int i = 0; i < len; i++) {
+    buf[i] = 
+  } 
+}*/
+//*******************************************************************
 //MAIN
 //*******************************************************************
 int main(int argc, char *argv[]) {
