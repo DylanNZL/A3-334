@@ -332,6 +332,7 @@ hints.ai_protocol = IPPROTO_TCP;
 //*******************************************************************
 //Get input while user don't type "."
 //*******************************************************************
+	// SEND REQUEST FOR E AND N
 	memset(&send_buffer,0,BUFFER_SIZE);
 	sprintf(send_buffer, "SEND RSA\r\n");
 	bytes = send(s, send_buffer, strlen(send_buffer),0);
@@ -346,7 +347,8 @@ hints.ai_protocol = IPPROTO_TCP;
      	if (receive_buffer[n] == '\n') { receive_buffer[n] = '\0'; break; }
      	if (receive_buffer[n] != '\r') n++;   /*ignore CR's*/
   	}
-	// EXTRACT E & N FROM RECIEVED Message
+
+	// EXTRACT E & N FROM RECIEVED MESSAGE
 	printf("%s\n",receive_buffer);
 	char * temp_buffer = new char[strlen(receive_buffer) + 1];
 	strcpy (temp_buffer, receive_buffer);
@@ -368,6 +370,22 @@ hints.ai_protocol = IPPROTO_TCP;
 	bytes = send(s, send_buffer, strlen(send_buffer),0);
 	printf("\nMSG SENT     --->>>: %s\n",send_buffer);//line sent
 
+	// RECIEVE NONCE ACK
+	n = 0;
+	memset(&receive_buffer, 0, BUFFER_SIZE);
+	while (1) {
+		bytes = recv(s, &receive_buffer[n], 1, 0);
+		#if defined __unix__ || defined __APPLE__
+     	if ((bytes == -1) || (bytes == 0)) { printf("recv failed\n"); exit(1); }
+		#elif defined _WIN32
+     	if ((bytes == SOCKET_ERROR) || (bytes == 0)) { printf("recv failed\n"); exit(1); }
+		#endif
+     	if (receive_buffer[n] == '\n') { receive_buffer[n] = '\0'; break; }
+     	if (receive_buffer[n] != '\r') n++;   /*ignore CR's*/
+  	}
+	printf("%s\n",receive_buffer);
+
+	// SEND MESSAGE:
   	memset(&send_buffer,0,BUFFER_SIZE);
 	printf("\n--------------------------------------------\n");
 	printf("you may now start sending commands to the <<<SERVER>>>\n");
