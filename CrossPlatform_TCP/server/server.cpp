@@ -58,8 +58,8 @@ void printBuffer(const char *header, char *buffer){
   cout << "---" << endl;
 }
 //*******************************************************************
-/*void decryptBuffer(char * buffer, RSA_D, RSA_N, RSA_NONCE) {
-  cout << buffer << endl;
+void decryptBuffer(char * buffer, long RSA_D, long RSA_N, long RSA_NONCE) {
+  cout << "Encrypted: " << buffer << endl;
   long buf[100];
   char * pch;
   char * b[100];
@@ -72,10 +72,23 @@ void printBuffer(const char *header, char *buffer){
     }
     len++;
   }
+
   for (int i = 0; i < len; i++) {
-    buf[i] = 
+    buf[i] = atoi(b[i]);
+    buf[i] = buf[i] % RSA_D;
+    if (i == 0) { buf[i] = buf[i] % RSA_NONCE; }
+    else { buf[i] = buf[i] ^ buf[i-1]; }
   } 
-}*/
+  char * temp_buffer = new char[200];
+	memset(&temp_buffer, 200, 0);
+	memset(&buffer, len, 0);
+  for (int i = 0; i < len; i++) {
+    sprintf(temp_buffer,"%ld", buf[i]);
+    strcat(buffer, temp_buffer);
+  }
+
+  cout << "Decrypted: " << buffer << endl;
+}
 //*******************************************************************
 //MAIN
 //*******************************************************************
