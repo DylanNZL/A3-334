@@ -80,44 +80,38 @@ void printBuffer(const char *header, char *buffer){
 }
 //*******************************************************************
 void decryptBuffer(char * buffer, long RSA_D, long RSA_N, long RSA_NONCE) {
-  cout << "Encrypted: " << buffer << endl;
-  long buf[100];
-  long encrypted[100];
+  long buf[200];
+  long encrypted[200];
   char * pch;
-  char * b[100];
   pch = strtok(buffer, ":");
   int len = 0;
   while (true) {
     pch = strtok(NULL, ";");
-    cout << pch << endl;
     if (pch == NULL) {
       break;
     } 
     encrypted[len] = atoi(pch);
     len++;
   }
-
+  printf("NONCE: %ld\n", RSA_NONCE);
   for (int i = 0; i < len; i++) {
     // RSA 
     buf[i] = repeatSquare(encrypted[i], RSA_D, RSA_N);
+    //printf("BUF = %ld\n", buf[i]);
     // CBC
     if (i == 0) { buf[i] = buf[i] ^ RSA_NONCE; }
     buf[i] = buf[i] ^ encrypted[i-1];
-    printf("Decrypted %ld to %ld (%c)\n", encrypted[i], buf[i], buf[i]);
+    printf("Decrypted %ld to %ld (%c)\n", encrypted[i], buf[i], (char) buf[i]);
   } 
 
   char * temp_buffer = new char[200];
-	memset(&temp_buffer, 200, 0);
-	memset(&buffer, len, 0);
-  cout << buffer << endl << temp_buffer << endl;
-  for (unsigned int i = 0; i < len; i++) {
-    printf("%c\n",buf[i]);
-    sprintf(temp_buffer,"%c", buf[i]);
+	memset(temp_buffer, '\0', 200);
+	memset(buffer, '\0', 200);
+  for (int i = 0; i < len; i++) {
+    sprintf(temp_buffer,"%c", (char) buf[i]);
     strcat(buffer, temp_buffer);
   }
-  for (int j = 0; j < strlen(buffer); j++) {
-    printf("Buffer: %d \t %c \n", buffer[j], buffer[j]);
-  }
+  strcat(buffer, "\r\n");
 }
 //*******************************************************************
 //MAIN
@@ -486,8 +480,9 @@ while (1) {  //main loop
       strcpy (temp_buffer, receive_buffer);
       //printBuffer("RECEIVE_BUFFER", temp_buffer);
       decryptBuffer(temp_buffer, RSA_D, RSA_N, RSA_NONCE);
+      printBuffer("TEMP_BUFFER", temp_buffer);
       memset(&send_buffer, 0, BUFFER_SIZE);
-      sprintf(send_buffer, "Received: %s\r\n", temp_buffer);
+      sprintf(send_buffer, "Received: %s", temp_buffer);
     } 
     // UNKNOWN
     else {
