@@ -44,6 +44,27 @@
 #define DEFAULT_PORT "1234"
 using namespace std;
 //*******************************************************************
+/**
+ * @param {x} long to be decrupted
+ * @param {d} RSA D value
+ * @param {n} RSA N value
+ * @returns {y} Decrypted x value
+ */
+long repeatSquare(long x, long d, long n) {
+	long y = 1;//initialize y to 1, very important
+	while (d >  0) {
+		if (( d % 2 ) == 0) {
+			x = (x*x) % n;
+			d = d/2;
+		}
+		else {
+			y = (x*y) % n;
+			d = d-1;
+		}
+	}
+	return y; //the result is stored in y
+}
+//*******************************************************************
 void printBuffer(const char *header, char *buffer){
   cout << "------" << header << "------" << endl;
   for(unsigned int i=0; i < strlen(buffer); i++){
@@ -61,33 +82,42 @@ void printBuffer(const char *header, char *buffer){
 void decryptBuffer(char * buffer, long RSA_D, long RSA_N, long RSA_NONCE) {
   cout << "Encrypted: " << buffer << endl;
   long buf[100];
+  long encrypted[100];
   char * pch;
   char * b[100];
   pch = strtok(buffer, ":");
   int len = 0;
   while (true) {
-    pch = strtok(buffer, ";");
+    pch = strtok(NULL, ";");
+    cout << pch << endl;
     if (pch == NULL) {
       break;
-    }
+    } 
+    encrypted[len] = atoi(pch);
     len++;
   }
 
   for (int i = 0; i < len; i++) {
-    buf[i] = atoi(b[i]);
-    buf[i] = buf[i] % RSA_D;
-    if (i == 0) { buf[i] = buf[i] % RSA_NONCE; }
-    else { buf[i] = buf[i] ^ buf[i-1]; }
+    // RSA 
+    buf[i] = repeatSquare(encrypted[i], RSA_D, RSA_N);
+    // CBC
+    if (i == 0) { buf[i] = buf[i] ^ RSA_NONCE; }
+    buf[i] = buf[i] ^ encrypted[i-1];
+    printf("Decrypted %ld to %ld (%c)\n", encrypted[i], buf[i], buf[i]);
   } 
+
   char * temp_buffer = new char[200];
 	memset(&temp_buffer, 200, 0);
 	memset(&buffer, len, 0);
-  for (int i = 0; i < len; i++) {
-    sprintf(temp_buffer,"%ld", buf[i]);
+  cout << buffer << endl << temp_buffer << endl;
+  for (unsigned int i = 0; i < len; i++) {
+    printf("%c\n",buf[i]);
+    sprintf(temp_buffer,"%c", buf[i]);
     strcat(buffer, temp_buffer);
   }
-
-  cout << "Decrypted: " << buffer << endl;
+  for (int j = 0; j < strlen(buffer); j++) {
+    printf("Buffer: %d \t %c \n", buffer[j], buffer[j]);
+  }
 }
 //*******************************************************************
 //MAIN
@@ -428,6 +458,7 @@ while (1) {  //main loop
 //********************************************************************
     printf("\nMSG RECEIVED <<<--- :%s\n",receive_buffer);
     // TODO: Check what kind of message we recieved.
+    // TODO: Encrypt and send
     // REQUESTING RSA E,N
     if (strncmp(receive_buffer, "SEND RSA", 8) == 0) {
       memset(&send_buffer, 0, BUFFER_SIZE);
@@ -450,12 +481,12 @@ while (1) {  //main loop
       sprintf(send_buffer, "ACK 220 nonce OK\r\n");
     } 
     // RECIEVED CYCPHER TEXT
-    else if (strncmp(receive_buffer, "CYPHERTEXT", 10) == 0) {
+    else if (strncmp(receive_buffer, "C:", 2) == 0) {
       char * temp_buffer = new char[strlen(receive_buffer) + 1];
-      strcpy (temp_buffer, temp_buffer);
-      printBuffer("RECEIVE_BUFFER", temp_buffer);
+      strcpy (temp_buffer, receive_buffer);
+      //printBuffer("RECEIVE_BUFFER", temp_buffer);
       decryptBuffer(temp_buffer, RSA_D, RSA_N, RSA_NONCE);
-       memset(&send_buffer, 0, BUFFER_SIZE);
+      memset(&send_buffer, 0, BUFFER_SIZE);
       sprintf(send_buffer, "Received: %s\r\n", temp_buffer);
     } 
     // UNKNOWN

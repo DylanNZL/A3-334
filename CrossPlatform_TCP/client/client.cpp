@@ -49,6 +49,28 @@
 enum CommandName{USER, PASS, SHUTDOWN};
 
 using namespace std;
+
+/////////////////////////////////////////////////////////////////////////////////////
+/**
+ * @param {x} long to be encrypted
+ * @param {e} RSA E value
+ * @param {n} RSA N value
+ * @returns {y} Encrypted x value
+ */
+long repeatSquare(long x, long e, long n) {
+	long y = 1;//initialize y to 1, very important
+	while (e >  0) {
+		if (( e % 2 ) == 0) {
+			x = (x*x) % n;
+			e = e/2;
+		}
+		else {
+			y = (x*y) % n;
+			e = e-1;
+		}
+	}
+	return y;
+}
 /////////////////////////////////////////////////////////////////////
 
 void printBuffer(const char *header, char *buffer){
@@ -71,20 +93,24 @@ void printBuffer(const char *header, char *buffer){
 // then result % n
 // returns the ecncypted send buffer (will take up alot more space)
 void encryptBuffer(char * send_buffer, long e, long n, long nonce) {
-	int len = strlen(send_buffer);
+	int len = strlen(send_buffer) - 2;
 	long buffer[len];
 	for (int i = 0; i < len; i++) {
 		char letter = send_buffer[i];
-		long eletter;
-		if (i == 0) eletter = letter ^ e;
-		else eletter = letter ^ buffer[i-1];
-		buffer[i] = eletter % n;
+		if (letter == '\r' || letter == '\n') continue;
+		long x = letter;
+		// CBC part
+		if (i == 0) { x = x ^ nonce; }
+		else { x = x ^ buffer[i-1]; }
+		// RSA part
+		buffer[i] = repeatSquare(x, e, n);
+		printf("Encrypted %c to %ld\n", letter, buffer[i]);
 	}
 	
 	char * temp_buffer = new char[200];
 	memset(&temp_buffer, 200, 0);
 	memset(&send_buffer, len, 0);
-	sprintf(send_buffer,"CYPHERTEXT:");
+	sprintf(send_buffer,"C:");
 	for (int i = 0; i < len; i++) {
 		// Print the encrypted character 
 		sprintf(temp_buffer,"%ld;",buffer[i]);
@@ -93,7 +119,6 @@ void encryptBuffer(char * send_buffer, long e, long n, long nonce) {
 	}
 	strcat(send_buffer, "\r\n");
 }
-
 /////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
 //*******************************************************************
@@ -113,15 +138,11 @@ int main(int argc, char *argv[]) {
 //remember that the BUFFESIZE has to be at least big enough to receive the answer from the server
 #define SEGMENT_SIZE 70
 //segment size, i.e., if fgets gets more than this number of bytes it segments the message
-
    char send_buffer[BUFFER_SIZE],receive_buffer[BUFFER_SIZE];
    int n,bytes;
-
    char serverHost[NI_MAXHOST];
    char serverService[NI_MAXSERV];
-
    //memset(&sin, 0, sizeof(sin));
-
 #if defined __unix__ || defined __APPLE__
    //nothing to do here
 
@@ -252,27 +273,6 @@ hints.ai_protocol = IPPROTO_TCP;
       exit(1);//return 1;
   	}
 #endif
-
-   //sin.sin_family = AF_INET;
-//~ //*******************************************************************
-//~ //GETHOSTBYNAME
-//~ //*******************************************************************
-   //~ if ((h=gethostbyname(argv[1])) != NULL) {
-      //~ memcpy(&sin.sin_addr,h->h_addr,h->h_length); //get remote IP address
-   //~ } else if ((sin.sin_addr.s_addr = inet_addr(argv[1])) == INADDR_NONE) {
-      //~ printf("An error occured when trying to translate to IP address\n");
-		//~ WSACleanup();
-   	//~ exit(1);
-   //~ }
-//*******************************************************************
-//CONNECT
-//*******************************************************************
-   //~ if (connect(s, (struct sockaddr *)&sin, sizeof(sin)) != 0) {
-      //~ printf("connect failed\n");
-		//~ WSACleanup();
-   	//~ exit(1);
-   //~ }
-
 	 if (connect(s, result->ai_addr, result->ai_addrlen) != 0) {
         printf("connect failed\n");
 		freeaddrinfo(result);
@@ -281,23 +281,10 @@ hints.ai_protocol = IPPROTO_TCP;
 #endif
    	    exit(1);
    } else {
-		//~ printf("connected to server.\n");
-		//~ struct sockaddr_in sa;
-      //~ char ipstr[INET_ADDRSTRLEN];
-
-		// store this IP address in sa:
-      //inet_pton(AF_INET, result->ai_addr, &(sa.sin_addr));
-
-		//-----------------------------------
-		//~ void *addr;
 		char ipver[80];
-
 		// Get the pointer to the address itself, different fields in IPv4 and IPv6
 		if (result->ai_family == AF_INET)
 		{
-			// IPv4
-			//~ struct sockaddr_in *ipv4 = (struct sockaddr_in *)result->ai_addr;
-			//~ addr = &(ipv4->sin_addr);
 			strcpy(ipver,"IPv4");
 		}
 		else if(result->ai_family == AF_INET6)
@@ -309,11 +296,6 @@ hints.ai_protocol = IPPROTO_TCP;
 		}
 
 		printf("\nConnected to <<<SERVER>>> with IP address: %s, %s at port: %s\n", argv[1], ipver,portNum);
-
-		//--------------------------------------------------------------------------------
-	   //getnameinfo() can be used to extract the IP address of the SERVER, in case a hostname was
-		//              supplied by the user instead.
-
 #if defined __unix__ || defined __APPLE__
        int returnValue;
 #elif defined _WIN32
@@ -323,24 +305,9 @@ hints.ai_protocol = IPPROTO_TCP;
 		memset(serverHost, 0, sizeof(serverHost));
 	    memset(serverService, 0, sizeof(serverService));
 
-        //int addrlen = sizeof (struct sockaddr);
-        // int addrlen = sizeof (*(result->ai_addr));
-
         returnValue=getnameinfo((struct sockaddr *)result->ai_addr, /*addrlen*/ result->ai_addrlen,
                serverHost, sizeof(serverHost),
                serverService, sizeof(serverService), NI_NUMERICHOST);
-
-		// returnValue=getnameinfo((struct sockaddr *)result->ai_addr, /* sizeof(*(result->ai_addr)) */&addrlen,
-  //              serverHost, sizeof(serverHost),
-  //              serverService, sizeof(serverService),
-	 //            NI_NUMERICHOST);
-
-
-		//~ getnameinfo(result->ai_addr, sizeof(*(result->ai_addr)),
-               //~ serverHost, sizeof(serverHost),
-               //~ serverService, sizeof(serverService),
-	            //~ NI_NAMEREQD); //works only if the DNS can resolve the hostname; otherwise, will result in an error
-
 		if(returnValue != 0){
 
 #if defined __unix__ || defined __APPLE__
@@ -435,6 +402,7 @@ hints.ai_protocol = IPPROTO_TCP;
 	//SEND
 	//*******************************************************************
 	 	   encryptBuffer(send_buffer, RSA_E, RSA_N, RSA_NONCE);	
+			
 	       bytes = send(s, send_buffer, strlen(send_buffer),0);
 	       printf("\nMSG SENT     --->>>: %s\n",send_buffer);//line sent
 

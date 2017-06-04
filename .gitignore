@@ -50,3 +50,4 @@ Temporary Items
 *.o
 *.out
 *.exe
+.vscode
