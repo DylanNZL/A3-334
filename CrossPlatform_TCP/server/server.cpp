@@ -114,6 +114,21 @@ void decryptBuffer(char * buffer, long RSA_D, long RSA_N, long RSA_NONCE) {
   strcat(buffer, "\r\n");
 }
 //*******************************************************************
+// Buffer = "RSA E:123; N:123;\r\n"
+void dCA(char * buffer, long e, long n) {
+  // Private key of Server CA
+  long dCA_D = 16971;
+  long dCA_N = 25777;
+
+  long encrypted_e = repeatSquare(e, dCA_D, dCA_N);
+  long encrypted_n = repeatSquare(n, dCA_D, dCA_N);
+
+  memset(buffer, '\0', 200);
+
+  sprintf(buffer, "RSA E:%ld;N:%ld;\r\n", encrypted_e, encrypted_n);
+  //printf(buffer);
+}
+//*******************************************************************
 //MAIN
 //*******************************************************************
 int main(int argc, char *argv[]) {
@@ -415,9 +430,9 @@ while (1) {  //main loop
 		//Clear user details
 		memset(username,0,80);
 		memset(passwd,0,80);
-    long RSA_E = 3;
-    long RSA_D = 16971;
-    long RSA_N = 25777;
+    long RSA_E = 17;
+    long RSA_D = 413;
+    long RSA_N = 3233;
     long RSA_NONCE = 0;
     bool acknowledged = false;
 
@@ -456,7 +471,8 @@ while (1) {  //main loop
     // REQUESTING RSA E,N
     if (strncmp(receive_buffer, "SEND RSA", 8) == 0) {
       memset(&send_buffer, 0, BUFFER_SIZE);
-      sprintf(send_buffer, "RSA E:%ld;N:%ld;\r\n", RSA_E, RSA_N);
+      dCA(send_buffer, RSA_E, RSA_N);
+      printf("E: %ld N: %ld\n%s", RSA_E, RSA_N, send_buffer);
     } 
     // ACKNOWLEDGE RSA E,N
     else if (strncmp(receive_buffer, "RSA ACK", 7) == 0) {
@@ -464,13 +480,12 @@ while (1) {  //main loop
     } 
     // RECIEVE NONCE
     else if (strncmp(receive_buffer, "RSA NONCE", 9) == 0) {
-      char * temp_buffer = new char[strlen(receive_buffer) + 1];
-      strcpy (temp_buffer, receive_buffer);
       char * pch;
-      pch = strtok(temp_buffer, ":");
+      pch = strtok(receive_buffer, ":");
       pch = strtok(NULL, "\0");
-      RSA_NONCE = atoi(pch);
-      printf("NONCE: %ld\n", RSA_NONCE);
+      long encrypted_nonce = atoi(pch);
+      RSA_NONCE = repeatSquare(encrypted_nonce, RSA_D, RSA_N);
+      printf("NONCE: %ld, encrypted: %ld\n", RSA_NONCE, encrypted_nonce);
       memset(&send_buffer, 0, BUFFER_SIZE);
       sprintf(send_buffer, "ACK 220 nonce OK\r\n");
     } 

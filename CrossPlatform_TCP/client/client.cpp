@@ -120,6 +120,25 @@ void encryptBuffer(char * send_buffer, long e, long n, long nonce) {
 	strcat(send_buffer, "\r\n");
 }
 /////////////////////////////////////////////////////////////////////
+void eCA(char * buffer, long &e, long &n) {
+	// Public key of server CA
+	long eCA_E = 3;
+	long eCA_N = 25777;
+	// Get encrypted e and encrypted n
+	char * pch;
+	pch = strtok(buffer, ":");
+	pch = strtok(NULL, ";");
+	long encrypted_e = atoi(pch);
+	pch = strtok(NULL, ":");
+	pch = strtok(NULL, ";");
+	long encrypted_n = atoi(pch);
+
+	e = repeatSquare(encrypted_e, eCA_E, eCA_N);
+	n = repeatSquare(encrypted_n, eCA_E, eCA_N);
+
+	//printf("E: %ld; N: %ld;\n", e, n);
+}
+/////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
 //*******************************************************************
 // Initialization
@@ -346,23 +365,21 @@ hints.ai_protocol = IPPROTO_TCP;
 
 	// EXTRACT E & N FROM RECIEVED MESSAGE
 	printf("%s\n",receive_buffer);
-	char * temp_buffer = new char[strlen(receive_buffer) + 1];
-	strcpy (temp_buffer, receive_buffer);
-	char * pch;
-	pch = strtok(temp_buffer, ":");
-	pch = strtok(NULL, ";");
-	long RSA_E = atoi(pch);
-	pch = strtok(NULL, ":");
-	pch = strtok(NULL, ";");
-	long RSA_N = atoi(pch);
+	long RSA_E = 0;
+	long RSA_N = 0;
+	eCA(receive_buffer, RSA_E, RSA_N);
 	printf("E: %ld\nN: %ld\n", RSA_E, RSA_N);
 
-	// SEND NONCE ENCRYPTED WITH E
-	// TODO: ENCRYPT WITH E
+	// SEND NONCE ENCRYPTED WITH e,n
 	srand(time(NULL));
 	long RSA_NONCE = rand();
-	memset(&send_buffer,0,BUFFER_SIZE);	
-	sprintf(send_buffer, "RSA NONCE:%ld;\r\n", RSA_NONCE);
+	while (RSA_NONCE > RSA_N - 1) {
+		RSA_NONCE = rand();
+	}
+	memset(&send_buffer,0,BUFFER_SIZE);
+	long encrypted_nonce = repeatSquare(RSA_NONCE, RSA_E, RSA_N);	
+	printf("NONCE: %ld ENCYRPTED: %ld\n", RSA_NONCE, encrypted_nonce);
+	sprintf(send_buffer, "RSA NONCE:%ld;\r\n", encrypted_nonce);
 	bytes = send(s, send_buffer, strlen(send_buffer),0);
 	printf("\nMSG SENT     --->>>: %s\n",send_buffer);//line sent
 
