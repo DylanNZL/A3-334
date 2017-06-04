@@ -368,7 +368,7 @@ hints.ai_protocol = IPPROTO_TCP;
 	long RSA_E = 0;
 	long RSA_N = 0;
 	eCA(receive_buffer, RSA_E, RSA_N);
-	printf("E: %ld\nN: %ld\n", RSA_E, RSA_N);
+	//printf("E: %ld\nN: %ld\n", RSA_E, RSA_N);
 
 	// SEND NONCE ENCRYPTED WITH e,n
 	srand(time(NULL));
@@ -378,7 +378,7 @@ hints.ai_protocol = IPPROTO_TCP;
 	}
 	memset(&send_buffer,0,BUFFER_SIZE);
 	long encrypted_nonce = repeatSquare(RSA_NONCE, RSA_E, RSA_N);	
-	printf("NONCE: %ld ENCYRPTED: %ld\n", RSA_NONCE, encrypted_nonce);
+	//printf("NONCE: %ld ENCYRPTED: %ld\n", RSA_NONCE, encrypted_nonce);
 	sprintf(send_buffer, "RSA NONCE:%ld;\r\n", encrypted_nonce);
 	bytes = send(s, send_buffer, strlen(send_buffer),0);
 	printf("\nMSG SENT     --->>>: %s\n",send_buffer);//line sent

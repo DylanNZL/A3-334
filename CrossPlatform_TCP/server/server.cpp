@@ -82,6 +82,8 @@ void printBuffer(const char *header, char *buffer){
 void decryptBuffer(char * buffer, long RSA_D, long RSA_N, long RSA_NONCE) {
   long buf[200];
   long encrypted[200];
+  memset(buf, 0, 200);
+  memset(encrypted, 0, 200);
   char * pch;
   pch = strtok(buffer, ":");
   int len = 0;
@@ -472,7 +474,7 @@ while (1) {  //main loop
     if (strncmp(receive_buffer, "SEND RSA", 8) == 0) {
       memset(&send_buffer, 0, BUFFER_SIZE);
       dCA(send_buffer, RSA_E, RSA_N);
-      printf("E: %ld N: %ld\n%s", RSA_E, RSA_N, send_buffer);
+      //printf("E: %ld N: %ld\n%s", RSA_E, RSA_N, send_buffer);
     } 
     // ACKNOWLEDGE RSA E,N
     else if (strncmp(receive_buffer, "RSA ACK", 7) == 0) {
@@ -485,7 +487,7 @@ while (1) {  //main loop
       pch = strtok(NULL, "\0");
       long encrypted_nonce = atoi(pch);
       RSA_NONCE = repeatSquare(encrypted_nonce, RSA_D, RSA_N);
-      printf("NONCE: %ld, encrypted: %ld\n", RSA_NONCE, encrypted_nonce);
+      //printf("NONCE: %ld, encrypted: %ld\n", RSA_NONCE, encrypted_nonce);
       memset(&send_buffer, 0, BUFFER_SIZE);
       sprintf(send_buffer, "ACK 220 nonce OK\r\n");
     } 
