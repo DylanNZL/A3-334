@@ -95,15 +95,21 @@ void decryptBuffer(char * buffer, long RSA_D, long RSA_N, long RSA_NONCE) {
     encrypted[len] = atoi(pch);
     len++;
   }
-  printf("NONCE: %ld\n", RSA_NONCE);
+  
   for (int i = 0; i < len; i++) {
     // RSA 
     buf[i] = repeatSquare(encrypted[i], RSA_D, RSA_N);
     //printf("BUF = %ld\n", buf[i]);
     // CBC
     if (i == 0) { buf[i] = buf[i] ^ RSA_NONCE; }
-    buf[i] = buf[i] ^ encrypted[i-1];
-    printf("Decrypted %ld to %ld (%c)\n", encrypted[i], buf[i], (char) buf[i]);
+    else {
+      if (encrypted[i-1] > n - 100) {
+				buf[i] = buf[i] ^ (encrypted[i-1] / 2);
+			} else { 
+			  buf[i] = buf[i] ^ encrypted[i-1];
+			} 
+    }
+    printf("Decrypted %ld (%c) from %ld\n",buf[i], (char) buf[i], encrypted[i]);
   } 
 
   char * temp_buffer = new char[200];
@@ -495,9 +501,8 @@ while (1) {  //main loop
     else if (strncmp(receive_buffer, "C:", 2) == 0) {
       char * temp_buffer = new char[strlen(receive_buffer) + 1];
       strcpy (temp_buffer, receive_buffer);
-      //printBuffer("RECEIVE_BUFFER", temp_buffer);
       decryptBuffer(temp_buffer, RSA_D, RSA_N, RSA_NONCE);
-      printBuffer("TEMP_BUFFER", temp_buffer);
+      //printBuffer("TEMP_BUFFER", temp_buffer);
       memset(&send_buffer, 0, BUFFER_SIZE);
       sprintf(send_buffer, "Received: %s", temp_buffer);
     } 

@@ -95,13 +95,22 @@ void printBuffer(const char *header, char *buffer){
 void encryptBuffer(char * send_buffer, long e, long n, long nonce) {
 	int len = strlen(send_buffer) - 2;
 	long buffer[len];
+	printf("E = %ld; N = %ld;\n", e, n);
 	for (int i = 0; i < len; i++) {
 		char letter = send_buffer[i];
 		if (letter == '\r' || letter == '\n') continue;
 		long x = letter;
 		// CBC part
 		if (i == 0) { x = x ^ nonce; }
-		else { x = x ^ buffer[i-1]; }
+		else { 
+			if (buffer[i-1] > n - 100) {
+				x = x ^ (buffer[i-1] / 2);
+				printf("xor halved %ld", buffer[i-1]);
+			} else { 
+				x = x ^ buffer[i-1]; 
+				printf("xor %ld", buffer[i-1]);
+			} 
+		}
 		// RSA part
 		buffer[i] = repeatSquare(x, e, n);
 		printf("Encrypted %c to %ld\n", letter, buffer[i]);
@@ -411,7 +420,7 @@ hints.ai_protocol = IPPROTO_TCP;
 	//while ((strncmp(send_buffer,".",1) != 0) && (strncmp(send_buffer,"\n",1) != 0)) {
 	while ((strncmp(send_buffer,".",1) != 0)) {
 		   send_buffer[strlen(send_buffer)-1]='\0';//strip '\n'
-		   printBuffer("SEND_BUFFER", send_buffer);
+		   
 		   printf("Message length: %d \n",(int)strlen(send_buffer));
 
 	       strcat(send_buffer,"\r\n");
@@ -419,7 +428,7 @@ hints.ai_protocol = IPPROTO_TCP;
 	//SEND
 	//*******************************************************************
 	 	   encryptBuffer(send_buffer, RSA_E, RSA_N, RSA_NONCE);	
-			
+		   //printBuffer("SEND_BUFFER", send_buffer);
 	       bytes = send(s, send_buffer, strlen(send_buffer),0);
 	       printf("\nMSG SENT     --->>>: %s\n",send_buffer);//line sent
 
