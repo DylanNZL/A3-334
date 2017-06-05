@@ -103,7 +103,7 @@ void decryptBuffer(char * buffer, long RSA_D, long RSA_N, long RSA_NONCE) {
     // CBC
     if (i == 0) { buf[i] = buf[i] ^ RSA_NONCE; }
     else {
-      if (encrypted[i-1] > n - 100) {
+      if (encrypted[i-1] > RSA_N - 100) {
 				buf[i] = buf[i] ^ (encrypted[i-1] / 2);
 			} else { 
 			  buf[i] = buf[i] ^ encrypted[i-1];
